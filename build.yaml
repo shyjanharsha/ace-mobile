@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        options:
+          map_union_type: false
+          copy_with: true
+          equal: true
+      json_serializable:
+        options:
+          explicit_to_json: true
+          checked: false
+          field_rename: snake
