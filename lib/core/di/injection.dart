@@ -9,6 +9,10 @@ import '../../features/home/data/datasources/home_remote_datasource.dart';
 import '../../features/home/data/repositories/home_repository.dart';
 import '../../features/friends/data/datasources/friends_remote_datasource.dart';
 import '../../features/friends/data/repositories/friends_repository.dart';
+import '../../features/rooms/data/datasources/rooms_remote_datasource.dart';
+import '../../features/rooms/data/repositories/rooms_repository.dart';
+import '../../features/gameplay/data/datasources/gameplay_remote_datasource.dart';
+import '../../features/gameplay/data/repositories/gameplay_repository.dart';
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -78,5 +82,27 @@ Future<void> setupDependencies() async {
 
   getIt.registerLazySingleton<FriendsRepository>(
     () => FriendsRepository(remoteDataSource: getIt<FriendsRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Rooms feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<RoomsRemoteDataSource>(
+    () => RoomsRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<RoomsRepository>(
+    () => RoomsRepository(remoteDataSource: getIt<RoomsRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Gameplay feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<GameplayRemoteDataSource>(
+    () => GameplayRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<GameplayRepository>(
+    () => GameplayRepository(dataSource: getIt<GameplayRemoteDataSource>()),
   );
 }

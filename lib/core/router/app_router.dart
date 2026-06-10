@@ -9,6 +9,8 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/friends/presentation/screens/friends_screen.dart';
+import '../../features/rooms/presentation/screens/room_lobby_screen.dart';
+import '../../features/gameplay/presentation/screens/game_table_screen.dart';
 
 /// GoRouter instance — auth-guarded navigation
 /// The router listens to [authStateProvider] and redirects accordingly
@@ -107,7 +109,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'roomLobby',
             builder: (context, state) {
               final roomId = int.parse(state.pathParameters['roomId']!);
-              return _PlaceholderScreen(title: 'Room Lobby #$roomId');
+              return RoomLobbyScreen(roomId: roomId);
             },
           ),
         ],
@@ -117,7 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'game',
         builder: (context, state) {
           final matchId = int.parse(state.pathParameters['matchId']!);
-          return _PlaceholderScreen(title: 'Game #$matchId');
+          return GameTableScreen(matchId: matchId);
         },
       ),
       GoRoute(
