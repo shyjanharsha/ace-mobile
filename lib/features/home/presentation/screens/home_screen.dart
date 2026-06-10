@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/create_room_dialog.dart';
 import '../widgets/friend_presence_list.dart';
@@ -38,77 +39,74 @@ class HomeScreen extends ConsumerWidget {
     final width = MediaQuery.sizeOf(context).width;
     final isTablet = width > 768;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
-                // -------------------------------------------------------
-                // Header: Profile, Coins, Level, Logout
-                // -------------------------------------------------------
-                _buildHeader(context, ref, user)
-                    .animate()
-                    .fade(duration: 400.ms)
-                    .slideY(begin: -0.1, duration: 400.ms),
+    return AppScaffold(
+      currentTab: AppTab.home,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
+              // -------------------------------------------------------
+              // Header: Profile, Coins, Level, Logout
+              // -------------------------------------------------------
+              _buildHeader(context, ref, user)
+                  .animate()
+                  .fade(duration: 400.ms)
+                  .slideY(begin: -0.1, duration: 400.ms),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // -------------------------------------------------------
-                // Main Content Area (Responsive)
-                // -------------------------------------------------------
-                Expanded(
-                  child: isTablet
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left section: Actions and Public Rooms
-                            Expanded(
-                              flex: 3,
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                child: Column(
-                                  children: [
-                                    _buildQuickActions(context),
-                                    const SizedBox(height: 24),
-                                    const PublicRoomsList(),
-                                  ],
-                                ),
+              // -------------------------------------------------------
+              // Main Content Area (Responsive)
+              // -------------------------------------------------------
+              Expanded(
+                child: isTablet
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left section: Actions and Public Rooms
+                          Expanded(
+                            flex: 3,
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  _buildQuickActions(context),
+                                  const SizedBox(height: 24),
+                                  const PublicRoomsList(),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 24),
-                            // Right section: Friends Presence
-                            const Expanded(
-                              flex: 2,
+                          ),
+                          const SizedBox(width: 24),
+                          // Right section: Friends Presence
+                          const Expanded(
+                            flex: 2,
+                            child: FriendPresenceList(),
+                          ),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildQuickActions(context),
+                            const SizedBox(height: 24),
+                            const PublicRoomsList(),
+                            const SizedBox(height: 24),
+                            const SizedBox(
+                              height: 350,
                               child: FriendPresenceList(),
                             ),
+                            const SizedBox(height: 24),
                           ],
-                        )
-                      : SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildQuickActions(context),
-                              const SizedBox(height: 24),
-                              const PublicRoomsList(),
-                              const SizedBox(height: 24),
-                              const SizedBox(
-                                height: 350,
-                                child: FriendPresenceList(),
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                          ),
                         ),
-                ),
-              ],
-            ),
+                      ),
+              ),
+            ],
           ),
         ),
       ),

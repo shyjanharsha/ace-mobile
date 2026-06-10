@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../providers/friends_providers.dart';
@@ -42,33 +43,30 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with SingleTicker
     final authState = ref.watch(authStateProvider);
     final currentUser = authState.value?.user;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Social Hub', style: AppTextStyles.titleMedium),
+    return AppScaffold(
+      currentTab: AppTab.friends,
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.goNamed('home'),
+        appBar: AppBar(
+          title: Text('Social Hub', style: AppTextStyles.titleMedium),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          bottom: TabBar(
+            controller: _tabCtrl,
+            indicatorColor: AppColors.primary,
+            labelColor: Colors.white,
+            unselectedLabelColor: AppColors.textSecondary,
+            labelStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: AppTextStyles.labelLarge,
+            tabs: const [
+              Tab(text: 'My Friends'),
+              Tab(text: 'Requests'),
+              Tab(text: 'Find Players'),
+            ],
+          ),
         ),
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: AppColors.primary,
-          labelColor: Colors.white,
-          unselectedLabelColor: AppColors.textSecondary,
-          labelStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
-          unselectedLabelStyle: AppTextStyles.labelLarge,
-          tabs: const [
-            Tab(text: 'My Friends'),
-            Tab(text: 'Requests'),
-            Tab(text: 'Find Players'),
-          ],
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: TabBarView(
+        body: TabBarView(
           controller: _tabCtrl,
           children: [
             _MyFriendsTab(currentUser: currentUser),

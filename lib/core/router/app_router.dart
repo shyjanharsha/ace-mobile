@@ -11,6 +11,14 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/friends/presentation/screens/friends_screen.dart';
 import '../../features/rooms/presentation/screens/room_lobby_screen.dart';
 import '../../features/gameplay/presentation/screens/game_table_screen.dart';
+import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/match_history_screen.dart';
+import '../../features/profile/presentation/screens/settings_screen.dart';
+import '../../features/profile/presentation/screens/contact_sync_screen.dart';
+import '../../features/groups/presentation/screens/groups_list_screen.dart';
+import '../../features/groups/presentation/screens/group_details_screen.dart';
 
 /// GoRouter instance — auth-guarded navigation
 /// The router listens to [authStateProvider] and redirects accordingly
@@ -87,7 +95,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // -------------------------------------------------------
-      // Protected routes (shells with bottom nav will be added in Phase 3)
+      // Protected routes
       // -------------------------------------------------------
       GoRoute(
         path: RouteNames.home,
@@ -102,7 +110,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/rooms',
         name: 'rooms',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Rooms'),
+        builder: (context, state) => const Scaffold(body: Center(child: Text('Rooms Lobby'))),
         routes: [
           GoRoute(
             path: ':roomId',
@@ -125,17 +133,49 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.leaderboard,
         name: 'leaderboard',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Leaderboard'),
+        builder: (context, state) => const LeaderboardScreen(),
       ),
       GoRoute(
         path: RouteNames.notifications,
         name: 'notifications',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Notifications'),
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: RouteNames.profile,
         name: 'profile',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Profile'),
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.matchHistory,
+        name: 'matchHistory',
+        builder: (context, state) => const MatchHistoryScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.groups,
+        name: 'groups',
+        builder: (context, state) => const GroupsListScreen(),
+        routes: [
+          GoRoute(
+            path: ':groupId',
+            name: 'groupDetails',
+            builder: (context, state) {
+              final groupId = int.parse(state.pathParameters['groupId']!);
+              return GroupDetailsScreen(groupId: groupId);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: RouteNames.settings,
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'sync_contacts',
+            name: 'syncContacts',
+            builder: (context, state) => const ContactSyncScreen(),
+          ),
+        ],
       ),
     ],
 
@@ -182,20 +222,3 @@ CustomTransitionPage<void> _buildSlidePage({
       },
       transitionDuration: const Duration(milliseconds: 350),
     );
-
-// -------------------------------------------------------
-// Placeholder — replaced phase by phase
-// -------------------------------------------------------
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFF0D0E1A),
-        appBar: AppBar(title: Text(title)),
-        body: Center(
-          child: Text(title, style: const TextStyle(color: Colors.white70, fontSize: 24)),
-        ),
-      );
-}

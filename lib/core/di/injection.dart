@@ -13,6 +13,14 @@ import '../../features/rooms/data/datasources/rooms_remote_datasource.dart';
 import '../../features/rooms/data/repositories/rooms_repository.dart';
 import '../../features/gameplay/data/datasources/gameplay_remote_datasource.dart';
 import '../../features/gameplay/data/repositories/gameplay_repository.dart';
+import '../../features/leaderboard/data/datasources/leaderboard_remote_datasource.dart';
+import '../../features/leaderboard/data/repositories/leaderboard_repository.dart';
+import '../../features/notifications/data/datasources/notifications_remote_datasource.dart';
+import '../../features/notifications/data/repositories/notifications_repository.dart';
+import '../../features/profile/data/datasources/profile_remote_datasource.dart';
+import '../../features/profile/data/repositories/profile_repository.dart';
+import '../../features/groups/data/datasources/groups_remote_datasource.dart';
+import '../../features/groups/data/repositories/groups_repository.dart';
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -104,5 +112,49 @@ Future<void> setupDependencies() async {
 
   getIt.registerLazySingleton<GameplayRepository>(
     () => GameplayRepository(dataSource: getIt<GameplayRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Leaderboard feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<LeaderboardRemoteDataSource>(
+    () => LeaderboardRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<LeaderboardRepository>(
+    () => LeaderboardRepository(remoteDataSource: getIt<LeaderboardRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Notifications feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<NotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepository(remoteDataSource: getIt<NotificationsRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Profile feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<ProfileRemoteDataSource>(
+    () => ProfileRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepository(remoteDataSource: getIt<ProfileRemoteDataSource>()),
+  );
+
+  // -------------------------------------------------------
+  // Groups feature
+  // -------------------------------------------------------
+  getIt.registerLazySingleton<GroupsRemoteDataSource>(
+    () => GroupsRemoteDataSource(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<GroupsRepository>(
+    () => GroupsRepository(remoteDataSource: getIt<GroupsRemoteDataSource>()),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/models/user_model.dart';
 import '../../domain/auth_state.dart';
 
 /// Auth repository provider
@@ -102,4 +103,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   // -------------------------------------------------------
   bool get isAuthenticated =>
       state.value?.isAuthenticated ?? false;
+
+  void updateSessionUser(UserModel updatedUser) {
+    if (state.value is AuthAuthenticated) {
+      state = AsyncValue.data(AuthState.authenticated(user: updatedUser));
+    }
+  }
 }
