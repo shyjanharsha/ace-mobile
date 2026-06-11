@@ -20,6 +20,7 @@ class WebSocketClient {
 
   int _reconnectAttempts = 0;
   bool _intentionallyClosed = false;
+  bool _isActionCableReady = false;
   String? _currentMatchId;
   String? _currentRoomId;
 
@@ -38,6 +39,7 @@ class WebSocketClient {
   // -------------------------------------------------------
   Future<void> connect() async {
     _intentionallyClosed = false;
+    _isActionCableReady = false;
     _eventController ??= StreamController<WsEvent>.broadcast();
 
     final token = await _secureStorage.getAccessToken();
@@ -60,8 +62,7 @@ class WebSocketClient {
         cancelOnError: false,
       );
 
-      _startHeartbeat();
-      _logger.i('[WS] Connected');
+      _logger.i('[WS] Connected, waiting for welcome message');
     } catch (e) {
       _logger.e('[WS] Connection failed: $e');
       _scheduleReconnect();
@@ -160,9 +161,15 @@ class WebSocketClient {
       // ActionCable ping — ignore
       if (type == 'ping') return;
 
-      // ActionCable welcome/confirm
-      if (type == 'welcome' || type == 'confirm_subscription') {
-        _logger.d('[WS] $type');
+      // ActionCable welcome
+      if (type == 'welcome') {
+        _logger.d('[WS] Received welcome, authenticating connection');
+        _onWelcomeReceived();
+        return;
+      }
+
+      if (type == 'confirm_subscription') {
+        _logger.d('[WS] Subscription confirmed: ${data['identifier']}');
         return;
       }
 
@@ -255,10 +262,26 @@ class WebSocketClient {
   }
 
   void _send(Map<String, dynamic> data) {
+    if (!_isActionCableReady && data['command'] != null) {
+      _logger.d('[WS] Queueing/Dropping message until ActionCable is ready: $data');
+      return;
+    }
     try {
       _channel?.sink.add(jsonEncode(data));
     } catch (e) {
       _logger.w('[WS] Send failed: $e');
+    }
+  }
+
+  void _onWelcomeReceived() {
+    _isActionCableReady = true;
+    _startHeartbeat();
+    subscribeToPresence();
+    if (_currentRoomId != null) {
+      subscribeToRoom(int.parse(_currentRoomId!));
+    }
+    if (_currentMatchId != null) {
+      subscribeToGame(int.parse(_currentMatchId!));
     }
   }
 

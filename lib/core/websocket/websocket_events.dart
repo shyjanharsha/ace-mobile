@@ -21,12 +21,12 @@ class WsEventTypes {
   static const String yourTurn          = 'your_turn';
   static const String cardPlayed        = 'card_played';
   static const String trickComplete     = 'trick_complete';
-  static const String playerCut         = 'player_cut';
+  static const String playerCut         = 'player_cut';      // NEW: cut occurred, penalized player gets pile
   static const String playerFinished    = 'player_finished';
   static const String gameOver          = 'game_over';
   static const String playerDisconnected = 'player_disconnected';
   static const String playerReconnected  = 'player_reconnected';
-  static const String moveTimeout       = 'move_timeout';
+  static const String moveTimeout       = 'move_timeout';    // NEW: server auto-played a card on timeout
   static const String reconnectedState  = 'reconnected_state';
 
   // -------------------------------------------------------
@@ -61,9 +61,12 @@ class WsEvent {
         WsEventTypes.yourTurn,
         WsEventTypes.cardPlayed,
         WsEventTypes.trickComplete,
+        WsEventTypes.playerCut,
         WsEventTypes.playerFinished,
         WsEventTypes.gameOver,
         WsEventTypes.moveTimeout,
+        WsEventTypes.playerDisconnected,
+        WsEventTypes.playerReconnected,
       ].contains(type);
 
   bool get isRoomEvent => [

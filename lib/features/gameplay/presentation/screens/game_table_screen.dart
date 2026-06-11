@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/gameplay_providers.dart';
+import '../providers/game_state_provider.dart';
 import '../widgets/playing_card_widget.dart';
 import '../widgets/winner_confetti.dart';
 import '../widgets/donkey_animation.dart';
@@ -26,6 +27,27 @@ class GameTableScreen extends ConsumerStatefulWidget {
 
 class _GameTableScreenState extends ConsumerState<GameTableScreen> {
   String? _hoveredCard;
+
+  @override
+  void initState() {
+    super.initState();
+    // Snackbar listener — show error from server rejection
+    ref.listenManual(
+      gameplayProvider(widget.matchId).select((s) => s.lastErrorMessage),
+      (_, message) {
+        if (message != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          ref.read(gameplayProvider(widget.matchId).notifier).clearError();
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +79,16 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                 children: [
                   Text(
                     'Failed to load match state',
-                    style: AppTextStyles.titleLarge.copyWith(color: AppColors.error),
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: AppColors.error,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      ref.read(gameplayProvider(widget.matchId).notifier).reconnectGame();
+                      ref
+                          .read(gameplayProvider(widget.matchId).notifier)
+                          .reconnectGame();
                     },
                     child: const Text('Retry Connection'),
                   ),
@@ -113,7 +139,12 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            final radius = min(constraints.maxWidth, constraints.maxHeight) * 0.38;
+                            final radius =
+                                min(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                ) *
+                                0.38;
 
                             return Stack(
                               alignment: Alignment.center,
@@ -126,21 +157,29 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        AppColors.primary.withValues(alpha: 0.05),
-                                        AppColors.secondary.withValues(alpha: 0.1),
+                                        AppColors.primary.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        AppColors.secondary.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         Colors.transparent,
                                       ],
                                     ),
                                     border: Border.all(
                                       color: (_hoveredCard != null
                                           ? AppColors.primary
-                                          : Colors.white.withValues(alpha: 0.1)),
+                                          : Colors.white.withValues(
+                                              alpha: 0.1,
+                                            )),
                                       width: _hoveredCard != null ? 3.0 : 1.5,
                                     ),
                                     boxShadow: [
                                       if (_hoveredCard != null)
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(alpha: 0.3),
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.3,
+                                          ),
                                           blurRadius: 20,
                                           spreadRadius: 2,
                                         ),
@@ -152,8 +191,11 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                 Center(
                                   child: DragTarget<String>(
                                     onWillAcceptWithDetails: (details) {
-                                      setState(() => _hoveredCard = details.data);
-                                      return gameplayState.isMyTurn && !isMeSafe;
+                                      setState(
+                                        () => _hoveredCard = details.data,
+                                      );
+                                      return gameplayState.isMyTurn &&
+                                          !isMeSafe;
                                     },
                                     onLeave: (_) {
                                       setState(() => _hoveredCard = null);
@@ -174,39 +216,83 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                           child: Stack(
                                             alignment: Alignment.center,
                                             children: [
-                                              if (gameplayState.trickPile.isEmpty)
+                                              if (gameplayState
+                                                  .trickPile
+                                                  .isEmpty)
                                                 Text(
-                                                  gameplayState.isMyTurn
-                                                      ? 'DRAG HERE TO PLAY'
-                                                      : 'WAITING FOR TURNS',
-                                                  textAlign: TextAlign.center,
-                                                  style: AppTextStyles.bodySmall.copyWith(
-                                                    color: gameplayState.isMyTurn
-                                                        ? AppColors.primary
-                                                        : Colors.white38,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 1.2,
-                                                  ),
-                                                ).animate(onPlay: (c) => c.repeat(reverse: true))
-                                                    .fade(begin: 0.4, end: 1.0, duration: 1000.ms)
+                                                      gameplayState.isMyTurn
+                                                          ? 'DRAG HERE TO PLAY'
+                                                          : 'WAITING FOR TURNS',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: AppTextStyles
+                                                          .bodySmall
+                                                          .copyWith(
+                                                            color:
+                                                                gameplayState
+                                                                    .isMyTurn
+                                                                ? AppColors
+                                                                      .primary
+                                                                : Colors
+                                                                      .white38,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            letterSpacing: 1.2,
+                                                          ),
+                                                    )
+                                                    .animate(
+                                                      onPlay: (c) => c.repeat(
+                                                        reverse: true,
+                                                      ),
+                                                    )
+                                                    .fade(
+                                                      begin: 0.4,
+                                                      end: 1.0,
+                                                      duration: 1000.ms,
+                                                    )
                                               else
-                                                ...gameplayState.trickPile.map((play) {
-                                                  final playerId = int.parse(play['player_id'].toString());
-                                                  final card = play['card'] as String;
-
-                                                  final seatPlayer = match.players.firstWhere(
-                                                    (p) => p.userId == playerId,
-                                                    orElse: () => match.players.first,
+                                                ...gameplayState.trickPile.map((
+                                                  play,
+                                                ) {
+                                                  final playerId = int.parse(
+                                                    play['player_id']
+                                                        .toString(),
                                                   );
-                                                  final relSeat = (seatPlayer.seatPosition - mySeat + totalPlayers) % totalPlayers;
+                                                  final card =
+                                                      play['card'] as String;
+
+                                                  final seatPlayer = match
+                                                      .players
+                                                      .firstWhere(
+                                                        (p) =>
+                                                            p.userId ==
+                                                            playerId,
+                                                        orElse: () =>
+                                                            match.players.first,
+                                                      );
+                                                  final relSeat =
+                                                      (seatPlayer.seatPosition -
+                                                          mySeat +
+                                                          totalPlayers) %
+                                                      totalPlayers;
 
                                                   // Calculate radial layout coordinates for trick pile card stack
-                                                  final angle = -pi / 2 + (relSeat * 2 * pi / totalPlayers);
-                                                  final cardX = cos(angle) * 32.0;
-                                                  final cardY = sin(angle) * 32.0;
+                                                  final angle =
+                                                      -pi / 2 +
+                                                      (relSeat *
+                                                          2 *
+                                                          pi /
+                                                          totalPlayers);
+                                                  final cardX =
+                                                      cos(angle) * 32.0;
+                                                  final cardY =
+                                                      sin(angle) * 32.0;
 
                                                   return Transform.translate(
-                                                    offset: Offset(cardX, cardY),
+                                                    offset: Offset(
+                                                      cardX,
+                                                      cardY,
+                                                    ),
                                                     child: Transform.rotate(
                                                       angle: angle + pi / 2,
                                                       child: PlayingCardWidget(
@@ -216,7 +302,10 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                                       ),
                                                     ),
                                                   ).animate().slide(
-                                                    begin: Offset(cos(angle) * 2, sin(angle) * 2),
+                                                    begin: Offset(
+                                                      cos(angle) * 2,
+                                                      sin(angle) * 2,
+                                                    ),
                                                     end: Offset.zero,
                                                     duration: 400.ms,
                                                     curve: Curves.easeOutQuad,
@@ -232,15 +321,35 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
 
                                 // Player Avatars distributed around the table
                                 ...match.players.map((player) {
-                                  final relSeat = (player.seatPosition - mySeat + totalPlayers) % totalPlayers;
-                                  final alignment = _getAlignmentForRelativeSeat(relSeat, totalPlayers);
-                                  final isTurn = gameplayState.currentTurn == player.userId;
-                                  final cardCount = player.userId == currentUserId
+                                  final relSeat =
+                                      (player.seatPosition -
+                                          mySeat +
+                                          totalPlayers) %
+                                      totalPlayers;
+                                  final alignment =
+                                      _getAlignmentForRelativeSeat(
+                                        relSeat,
+                                        totalPlayers,
+                                      );
+                                  final isTurn =
+                                      gameplayState.currentTurn ==
+                                      player.userId;
+                                  final cardCount =
+                                      player.userId == currentUserId
                                       ? gameplayState.myHand.length
-                                      : (gameplayState.cardCounts[player.userId] ?? 0);
-                                  final username = gameplayState.playerNames[player.userId] ?? 'Player';
-                                  final avatarUrl = gameplayState.playerAvatars[player.userId];
+                                      : (gameplayState.cardCounts[player
+                                                .userId] ??
+                                            0);
+                                  final username =
+                                      gameplayState.playerNames[player
+                                          .userId] ??
+                                      'Player';
+                                  final avatarUrl = gameplayState
+                                      .playerAvatars[player.userId];
                                   final isSafe = player.finalRank != null;
+                                  final isDisconnected = gameplayState
+                                      .disconnectedPlayers
+                                      .contains(player.userId);
 
                                   // Do not display local user twice (we render hand area below)
                                   if (relSeat == 0) {
@@ -248,22 +357,34 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                   }
 
                                   return Align(
-                                    alignment: alignment,
-                                    child: _buildPlayerAvatar(
-                                      username: username,
-                                      avatarUrl: avatarUrl,
-                                      cardCount: cardCount,
-                                      isTurn: isTurn,
-                                      isSafe: isSafe,
-                                      rank: player.finalRank,
-                                      timeoutSeconds: gameplayState.timeoutSeconds,
-                                    ),
-                                  ).animate().fade(duration: 500.ms).slide(
-                                    begin: alignment.y > 0
-                                        ? const Offset(0, 0.5)
-                                        : (alignment.y < 0 ? const Offset(0, -0.5) : Offset(alignment.x > 0 ? 0.5 : -0.5, 0)),
-                                    curve: Curves.easeOut,
-                                  );
+                                        alignment: alignment,
+                                        child: _buildPlayerAvatar(
+                                          username: username,
+                                          avatarUrl: avatarUrl,
+                                          cardCount: cardCount,
+                                          isTurn: isTurn,
+                                          isSafe: isSafe,
+                                          rank: player.finalRank,
+                                          timeoutSeconds:
+                                              gameplayState.timeoutSeconds,
+                                          isDisconnected: isDisconnected,
+                                        ),
+                                      )
+                                      .animate()
+                                      .fade(duration: 500.ms)
+                                      .slide(
+                                        begin: alignment.y > 0
+                                            ? const Offset(0, 0.5)
+                                            : (alignment.y < 0
+                                                  ? const Offset(0, -0.5)
+                                                  : Offset(
+                                                      alignment.x > 0
+                                                          ? 0.5
+                                                          : -0.5,
+                                                      0,
+                                                    )),
+                                        curve: Curves.easeOut,
+                                      );
                                 }),
                               ],
                             );
@@ -283,11 +404,17 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                         color: Colors.black45,
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.success.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.success, width: 2),
+                              border: Border.all(
+                                color: AppColors.success,
+                                width: 2,
+                              ),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -303,12 +430,16 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   'Rank: #${myMatchPlayer.finalRank}',
-                                  style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+                                  style: AppTextStyles.titleMedium.copyWith(
+                                    color: Colors.white,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Spectating remaining players...',
-                                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white60),
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: Colors.white60,
+                                  ),
                                 ),
                               ],
                             ),
@@ -318,7 +449,8 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                     ),
 
                   // Winner Confetti celebration
-                  if (isMeSafe || (isGameOver && !isMeDonkey)) const WinnerConfetti(),
+                  if (isMeSafe || (isGameOver && !isMeDonkey))
+                    const WinnerConfetti(),
 
                   // Game Over Donkey animation screen
                   if (isGameOver)
@@ -368,27 +500,41 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.style, size: 16, color: AppColors.gold),
-                const SizedBox(width: 6),
-                Text(
-                  'Trick: ${state.currentTrick}',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.sync, color: Colors.white70),
+                tooltip: 'Force Sync',
+                onPressed: () {
+                  ref.read(gameplayProvider(match.id).notifier).reconnectGame();
+                },
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-              ],
-            ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.style, size: 16, color: AppColors.gold),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Trick: ${state.currentTrick}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -404,6 +550,7 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
     required bool isSafe,
     required int? rank,
     required int timeoutSeconds,
+    bool isDisconnected = false,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -437,9 +584,11 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSafe
-                      ? AppColors.success
-                      : (isTurn ? AppColors.primary : Colors.white24),
+                  color: isDisconnected
+                      ? Colors.orange
+                      : (isSafe
+                            ? AppColors.success
+                            : (isTurn ? AppColors.primary : Colors.white24)),
                   width: 2,
                 ),
                 boxShadow: [
@@ -458,9 +607,13 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                         color: Colors.white10,
                         child: Center(
                           child: Text(
-                            username.isNotEmpty ? username[0].toUpperCase() : 'P',
+                            username.isNotEmpty
+                                ? username[0].toUpperCase()
+                                : 'P',
                             style: AppTextStyles.titleLarge.copyWith(
-                              color: Colors.white,
+                              color: isDisconnected
+                                  ? Colors.orange
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -489,6 +642,14 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                     ),
                   ),
                 ),
+              ),
+
+            // Disconnected indicator badge
+            if (isDisconnected && !isSafe)
+              const Positioned(
+                top: 0,
+                right: 0,
+                child: Icon(Icons.wifi_off, color: Colors.orange, size: 14),
               ),
           ],
         ),
@@ -521,21 +682,28 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: Colors.black26,
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // User Turn Alert / Suit Alert
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 4.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   isMeSafe
                       ? 'SPECTATOR MODE'
-                      : (state.isMyTurn ? 'YOUR TURN TO PLAY' : "WAITING FOR OTHERS' TURNS"),
+                      : (state.isMyTurn
+                            ? 'YOUR TURN TO PLAY'
+                            : "WAITING FOR OTHERS' TURNS"),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: state.isMyTurn ? AppColors.primary : Colors.white38,
                     fontWeight: FontWeight.bold,
@@ -544,11 +712,16 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                 ),
                 if (state.leadingSuit != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       'Suit Lead: ${state.leadingSuit}',
@@ -571,20 +744,31 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                 ? Center(
                     child: Text(
                       isMeSafe ? 'Exited!' : 'No Cards Dealt',
-                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white38),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white38,
+                      ),
                     ),
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: state.myHand.length,
+                    // Use sortedHand for display — engine-sorted by suit then rank
+                    itemCount: state.sortedHand.isNotEmpty
+                        ? state.sortedHand.length
+                        : state.myHand.length,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     itemBuilder: (context, index) {
-                      final cardCode = state.myHand[index];
-                      final isPlayable = state.isMyTurn && !isMeSafe;
+                      final hand = state.sortedHand.isNotEmpty
+                          ? state.sortedHand
+                          : state.myHand;
+                      final cardCode = hand[index];
+                      // Use engine-computed playable cards list
+                      final isPlayable =
+                          state.isCardPlayable(cardCode) && !isMeSafe;
 
-                      // OVERLAPPING HORIZONTAL CARDS fan-out effect using margins
-                      return Container(
-                        margin: EdgeInsets.only(right: index == state.myHand.length - 1 ? 0 : -20.0),
+                      // OVERLAPPING HORIZONTAL CARDS fan-out effect
+                      return Align(
+                        widthFactor: index == hand.length - 1 ? 1.0 : 0.65,
+                        alignment: Alignment.centerLeft,
                         child: Draggable<String>(
                           data: cardCode,
                           maxSimultaneousDrags: isPlayable ? 1 : 0,
@@ -610,10 +794,11 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
                                 _playCard(cardCode);
                               }
                             },
-                            child: PlayingCardWidget(
-                              cardCode: cardCode,
-                              isPlayable: isPlayable,
-                            ).animate().slideY(
+                            child:
+                                PlayingCardWidget(
+                                  cardCode: cardCode,
+                                  isPlayable: isPlayable,
+                                ).animate().slideY(
                                   begin: 0.5,
                                   end: 0.0,
                                   duration: 300.ms,
@@ -633,15 +818,18 @@ class _GameTableScreenState extends ConsumerState<GameTableScreen> {
 
   // Action methods
   void _playCard(String cardCode) {
-    ref.read(gameplayProvider(widget.matchId).notifier).playCard(cardCode).catchError((err) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Cannot play card: $err'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    });
+    ref
+        .read(gameplayProvider(widget.matchId).notifier)
+        .playCard(cardCode)
+        .catchError((err) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot play card: $err'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        });
   }
 
   // Positioning mapper helper (Trigonometry layout & Alignment bounds)
