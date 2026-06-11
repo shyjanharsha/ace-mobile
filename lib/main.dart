@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app.dart';
 import 'core/di/injection.dart';
 
@@ -24,6 +25,9 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Load env variables
+  await dotenv.load(fileName: '.env');
 
   // -------------------------------------------------------
   // Dependency injection

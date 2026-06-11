@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 // App-level constants — API endpoints, WebSocket URL, timeouts
 class ApiConstants {
   ApiConstants._();
@@ -5,15 +7,9 @@ class ApiConstants {
   // -------------------------------------------------------
   // Base URLs — change for staging/production
   // -------------------------------------------------------
-  static const String baseUrl = String.fromEnvironment(
-    'BASE_URL',
-    defaultValue: 'http://192.168.1.42:3000', // Host machine local IP
-  );
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://192.168.1.42:3000';
 
-  static const String wsBaseUrl = String.fromEnvironment(
-    'WS_BASE_URL',
-    defaultValue: 'ws://192.168.1.42:3000',
-  );
+  static String get wsBaseUrl => dotenv.env['WS_BASE_URL'] ?? 'ws://192.168.1.42:3000';
 
   // -------------------------------------------------------
   // API version prefix

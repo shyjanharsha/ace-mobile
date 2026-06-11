@@ -61,6 +61,7 @@ dependencies:
 
   # File paths
   path_provider: ^2.1.4
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +86,7 @@ flutter:
     - assets/images/
     - assets/animations/
     - assets/icons/
+    - .env
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
