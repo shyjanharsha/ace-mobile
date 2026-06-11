@@ -19,7 +19,7 @@ import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/profile/presentation/screens/contact_sync_screen.dart';
 import '../../features/groups/presentation/screens/groups_list_screen.dart';
 import '../../features/groups/presentation/screens/group_details_screen.dart';
-
+import '../../features/gameplay/presentation/screens/offline_setup_screen.dart';
 /// GoRouter instance — auth-guarded navigation
 /// The router listens to [authStateProvider] and redirects accordingly
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -129,6 +129,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final matchId = int.parse(state.pathParameters['matchId']!);
           return GameTableScreen(matchId: matchId);
         },
+      ),
+      GoRoute(
+        path: RouteNames.offlineSetup,
+        name: 'offlineSetup',
+        builder: (context, state) => const OfflineSetupScreen(),
       ),
       GoRoute(
         path: RouteNames.leaderboard,

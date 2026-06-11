@@ -16,6 +16,7 @@ class RouteNames {
   static const String matchHistory  = '/matches';
   static const String groups        = '/groups';
   static const String settings      = '/settings';
+  static const String offlineSetup  = '/offline-setup';
 
   // Path helpers with parameters
   static String roomLobbyPath(int roomId)   => '/rooms/$roomId';

@@ -19,7 +19,7 @@ enum Rank {
   seven('7', 7),
   eight('8', 8),
   nine('9', 9),
-  ten('T', 10),
+  ten('10', 10),
   jack('J', 11),
   queen('Q', 12),
   king('K', 13),
@@ -37,7 +37,7 @@ class PlayingCard {
   final Suit suit;
   final Rank rank;
 
-  /// E.g. "AS", "KH", "2C", "TD"
+  /// E.g. "AS", "KH", "2C", "10D"
   String get code => '${rank.code}${suit.code}';
 
   @override

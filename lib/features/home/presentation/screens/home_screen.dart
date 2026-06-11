@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:donkey_card_game/features/auth/domain/auth_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -231,26 +232,44 @@ class HomeScreen extends ConsumerWidget {
   // Host / Join table card shortcuts
   // -------------------------------------------------------
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _ActionCard(
-            title: 'Host Table',
-            subtitle: 'Create a new room',
-            icon: Icons.add_box_rounded,
-            gradientColors: const [AppColors.primary, AppColors.secondary],
-            onTap: () => _showCreateRoomDialog(context),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionCard(
+                title: 'Host Table',
+                subtitle: 'Create a new room',
+                icon: Icons.add_box_rounded,
+                gradientColors: const [AppColors.primary, AppColors.secondary],
+                onTap: () => _showCreateRoomDialog(context),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _ActionCard(
+                title: 'Join Table',
+                subtitle: 'Enter room code',
+                icon: Icons.style_rounded,
+                gradientColors: const [AppColors.gold, Color(0xFFFFB300)],
+                onTap: () => _showJoinRoomDialog(context),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _ActionCard(
-            title: 'Join Table',
-            subtitle: 'Enter room code',
-            icon: Icons.style_rounded,
-            gradientColors: const [AppColors.gold, Color(0xFFFFB300)],
-            onTap: () => _showJoinRoomDialog(context),
-          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionCard(
+                title: 'Offline Play',
+                subtitle: 'Play against AI bots',
+                icon: Icons.smart_toy_rounded,
+                gradientColors: const [Colors.greenAccent, Colors.teal],
+                onTap: () => context.push('/offline-setup'),
+              ),
+            ),
+          ],
         ),
       ],
     );

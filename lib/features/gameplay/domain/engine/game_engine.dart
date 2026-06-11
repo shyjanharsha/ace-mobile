@@ -139,9 +139,9 @@ class GameEngine {
   // Bot support
   // -------------------------------------------------------
 
-  /// Creates a bot strategy for the given difficulty.
-  static BotStrategy createBot(BotDifficulty difficulty) {
-    return BotEngine.create(difficulty);
+  /// Creates a bot strategy for the given personality.
+  static BotStrategy createBot(BotPersonality personality) {
+    return BotEngine.create(personality);
   }
 
   /// Asks the bot to choose a card to play.
@@ -152,6 +152,7 @@ class GameEngine {
     required List<TrickPlay> trickPile,
     required List<int> activePlayers,
     required Map<int, int> cardCounts,
+    required GameMemory memory,
   }) {
     return bot.chooseCard(
       hand: hand,
@@ -159,6 +160,7 @@ class GameEngine {
       trickPile: trickPile,
       activePlayers: activePlayers,
       cardCounts: cardCounts,
+      memory: memory,
     );
   }
 

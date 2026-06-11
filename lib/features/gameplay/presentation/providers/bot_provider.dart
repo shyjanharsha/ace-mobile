@@ -13,11 +13,13 @@ class BotConfig {
     required this.userId,
     required this.difficulty,
     required this.name,
+    this.personality = BotPersonality.beginner,
   });
 
   final int userId;
   final BotDifficulty difficulty;
   final String name;
+  final BotPersonality personality;
 }
 
 /// State for the BotManager.
@@ -96,7 +98,7 @@ class BotNotifier extends Notifier<BotState> {
 
   Future<void> _executeBotMove(BotConfig config, GameplayState gameplayState) async {
     try {
-      final strategy = BotEngine.create(config.difficulty);
+      final strategy = BotEngine.create(config.personality);
       final trickPile = gameplayState.trickPile
           .map((m) => TrickPlay.fromMap(m))
           .toList();
@@ -111,6 +113,7 @@ class BotNotifier extends Notifier<BotState> {
         trickPile: trickPile,
         activePlayers: gameplayState.activePlayers,
         cardCounts: gameplayState.cardCounts,
+        memory: GameMemory(),
       );
 
       final repo = getIt<GameplayRepository>();

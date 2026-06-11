@@ -110,15 +110,29 @@ class ReplayModel {
 /// Bot difficulty level
 enum BotDifficulty { easy, medium, hard }
 
+/// Bot personality types
+enum BotPersonality {
+  beginner,
+  conservative,
+  aggressive,
+  smart,
+  trickHunter,
+  escapeArtist,
+  adaptive,
+  master
+}
+
 /// Configuration for a bot player slot.
 class BotPlayerModel {
   const BotPlayerModel({
     required this.userId,
     required this.name,
     required this.difficulty,
+    this.personality = BotPersonality.beginner,
   });
 
   final int userId;
   final String name;
   final BotDifficulty difficulty;
+  final BotPersonality personality;
 }

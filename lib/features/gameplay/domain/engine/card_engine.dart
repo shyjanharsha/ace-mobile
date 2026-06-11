@@ -43,7 +43,7 @@ class CardEngine {
   // Parsing
   // -------------------------------------------------------
 
-  /// Parses a 2-char card code like "AS", "KH", "TD", "2C".
+  /// Parses a card code like "AS", "KH", "10D", "2C".
   static PlayingCard parseCard(String code) {
     if (code.length < 2) throw ArgumentError('Invalid card code: $code');
     final rankCode = code.substring(0, code.length - 1);
@@ -60,7 +60,7 @@ class CardEngine {
     return PlayingCard(suit: suit, rank: rank);
   }
 
-  /// Converts a [PlayingCard] to its 2-char string code.
+  /// Converts a [PlayingCard] to its string code.
   static String cardToCode(PlayingCard card) => card.code;
 
   // -------------------------------------------------------

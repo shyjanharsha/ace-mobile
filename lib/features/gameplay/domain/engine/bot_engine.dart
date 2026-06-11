@@ -4,31 +4,46 @@ import '../../data/models/game_data_models.dart';
 import 'card_engine.dart';
 import 'trick_engine.dart';
 
+/// Game memory for advanced bots to track state
+class GameMemory {
+  final Set<String> playedCards = {};
+  final Map<int, int> playerHandSizes = {};
+  final Map<String, int> suitCountsPlayed = {
+    'S': 0, 'H': 0, 'D': 0, 'C': 0
+  };
+
+  void updateMemory(String cardCode, int playerId, int newHandSize) {
+    playedCards.add(cardCode);
+    playerHandSizes[playerId] = newHandSize;
+    suitCountsPlayed[CardEngine.suitOf(cardCode)] = 
+        (suitCountsPlayed[CardEngine.suitOf(cardCode)] ?? 0) + 1;
+  }
+  
+  void reset() {
+    playedCards.clear();
+    playerHandSizes.clear();
+    suitCountsPlayed.updateAll((key, value) => 0);
+  }
+}
 
 /// Bot strategy interface
 abstract class BotStrategy {
   /// Choose a card to play given the current game context.
-  ///
-  /// - [hand]           — bot's current hand
-  /// - [leadingSuit]    — current leading suit (null = first play of trick)
-  /// - [trickPile]      — cards already played in this trick
-  /// - [activePlayers]  — list of active player IDs
-  /// - [cardCounts]     — userId → card count for other players
   String chooseCard({
     required List<String> hand,
     required String? leadingSuit,
     required List<TrickPlay> trickPile,
     required List<int> activePlayers,
     required Map<int, int> cardCounts,
+    required GameMemory memory,
   });
 }
 
 // -------------------------------------------------------
-// Easy Bot — plays any valid random card
+// 1. Beginner Bot (Easy)
 // -------------------------------------------------------
-class EasyBot implements BotStrategy {
-  EasyBot({int? seed}) : _random = Random(seed);
-
+class BeginnerBot implements BotStrategy {
+  BeginnerBot({int? seed}) : _random = Random(seed);
   final Random _random;
 
   @override
@@ -38,6 +53,7 @@ class EasyBot implements BotStrategy {
     required List<TrickPlay> trickPile,
     required List<int> activePlayers,
     required Map<int, int> cardCounts,
+    required GameMemory memory,
   }) {
     final playable = CardEngine.getPlayableCards(hand, leadingSuit);
     return playable[_random.nextInt(playable.length)];
@@ -45,11 +61,9 @@ class EasyBot implements BotStrategy {
 }
 
 // -------------------------------------------------------
-// Medium Bot — basic strategic play
+// 2. Conservative Bot (Medium)
 // -------------------------------------------------------
-class MediumBot implements BotStrategy {
-  MediumBot();
-
+class ConservativeBot implements BotStrategy {
   @override
   String chooseCard({
     required List<String> hand,
@@ -57,51 +71,172 @@ class MediumBot implements BotStrategy {
     required List<TrickPlay> trickPile,
     required List<int> activePlayers,
     required Map<int, int> cardCounts,
+    required GameMemory memory,
   }) {
     final playable = CardEngine.getPlayableCards(hand, leadingSuit);
-
-    // Strategy 1: If it's the first play (no leading suit), lead with lowest card
-    // to keep strong cards for later.
-    if (leadingSuit == null) {
-      return _lowestCard(playable);
-    }
-
-    // Strategy 2: If we must follow suit, play lowest of that suit
-    final suitMatches = playable.where(
-      (c) => CardEngine.suitOf(c) == leadingSuit,
-    ).toList();
-
+    if (leadingSuit == null) return _lowestCard(playable);
+    
+    final suitMatches = playable.where((c) => CardEngine.suitOf(c) == leadingSuit).toList();
     if (suitMatches.isNotEmpty) {
-      // If currently winning the trick, play the minimum needed to stay winning.
-      final currentLeader = TrickEngine.currentLeader(trickPile, leadingSuit);
-      if (currentLeader == null) {
-        // No one winning yet — play the lowest card of that suit
-        return _lowestCard(suitMatches);
-      }
-      // Otherwise play lowest since we can't control outcome anyway
       return _lowestCard(suitMatches);
     }
-
-    // Strategy 3: If we can cut, prefer to cut with a non-valuable card
-    // to dump it and avoid becoming the loser.
+    // If cutting, play lowest valid to avoid risk
     return _lowestCard(playable);
   }
 
   String _lowestCard(List<String> cards) {
     return cards.reduce((a, b) {
-      final rA = CardEngine.parseCard(a).rank.value;
-      final rB = CardEngine.parseCard(b).rank.value;
-      return rA <= rB ? a : b;
+      return CardEngine.parseCard(a).rank.value <= CardEngine.parseCard(b).rank.value ? a : b;
     });
   }
 }
 
 // -------------------------------------------------------
-// Hard Bot — advanced strategic play
+// 3. Aggressive Bot (Medium)
 // -------------------------------------------------------
-class HardBot implements BotStrategy {
-  HardBot({int? seed}) : _random = Random(seed);
+class AggressiveBot implements BotStrategy {
+  @override
+  String chooseCard({
+    required List<String> hand,
+    required String? leadingSuit,
+    required List<TrickPlay> trickPile,
+    required List<int> activePlayers,
+    required Map<int, int> cardCounts,
+    required GameMemory memory,
+  }) {
+    final playable = CardEngine.getPlayableCards(hand, leadingSuit);
+    if (leadingSuit == null) {
+      // Lead with highest to try winning trick
+      return _highestCard(playable);
+    }
+    
+    final suitMatches = playable.where((c) => CardEngine.suitOf(c) == leadingSuit).toList();
+    if (suitMatches.isNotEmpty) {
+      return _highestCard(suitMatches);
+    }
+    
+    // Cutting: dump highest card
+    return _highestCard(playable);
+  }
 
+  String _highestCard(List<String> cards) {
+    return cards.reduce((a, b) {
+      return CardEngine.parseCard(a).rank.value >= CardEngine.parseCard(b).rank.value ? a : b;
+    });
+  }
+}
+
+// -------------------------------------------------------
+// 4. Smart Bot (Medium)
+// -------------------------------------------------------
+class SmartBot implements BotStrategy {
+  @override
+  String chooseCard({
+    required List<String> hand,
+    required String? leadingSuit,
+    required List<TrickPlay> trickPile,
+    required List<int> activePlayers,
+    required Map<int, int> cardCounts,
+    required GameMemory memory,
+  }) {
+    final playable = CardEngine.getPlayableCards(hand, leadingSuit);
+    if (leadingSuit == null) {
+      return _lowestCard(playable);
+    }
+    
+    final suitMatches = playable.where((c) => CardEngine.suitOf(c) == leadingSuit).toList();
+    if (suitMatches.isNotEmpty) {
+      final currentLeader = TrickEngine.currentLeader(trickPile, leadingSuit);
+      if (currentLeader == null) return _lowestCard(suitMatches);
+      return _lowestCard(suitMatches); // Play safe
+    }
+    
+    // Cutting: dump highest card to lower hand value
+    return _highestCard(playable);
+  }
+
+  String _lowestCard(List<String> cards) {
+    return cards.reduce((a, b) => CardEngine.parseCard(a).rank.value <= CardEngine.parseCard(b).rank.value ? a : b);
+  }
+  String _highestCard(List<String> cards) {
+    return cards.reduce((a, b) => CardEngine.parseCard(a).rank.value >= CardEngine.parseCard(b).rank.value ? a : b);
+  }
+}
+
+// -------------------------------------------------------
+// 5. Trick Hunter Bot (Medium)
+// -------------------------------------------------------
+class TrickHunterBot implements BotStrategy {
+  @override
+  String chooseCard({
+    required List<String> hand,
+    required String? leadingSuit,
+    required List<TrickPlay> trickPile,
+    required List<int> activePlayers,
+    required Map<int, int> cardCounts,
+    required GameMemory memory,
+  }) {
+    final playable = CardEngine.getPlayableCards(hand, leadingSuit);
+    return playable.reduce((a, b) => CardEngine.parseCard(a).rank.value >= CardEngine.parseCard(b).rank.value ? a : b);
+  }
+}
+
+// -------------------------------------------------------
+// 6. Escape Artist Bot (Medium)
+// -------------------------------------------------------
+class EscapeArtistBot implements BotStrategy {
+  @override
+  String chooseCard({
+    required List<String> hand,
+    required String? leadingSuit,
+    required List<TrickPlay> trickPile,
+    required List<int> activePlayers,
+    required Map<int, int> cardCounts,
+    required GameMemory memory,
+  }) {
+    // Goal: Empty hand quickly. Prefers dumping highest valid card.
+    final playable = CardEngine.getPlayableCards(hand, leadingSuit);
+    return playable.reduce((a, b) => CardEngine.parseCard(a).rank.value >= CardEngine.parseCard(b).rank.value ? a : b);
+  }
+}
+
+// -------------------------------------------------------
+// 7. Adaptive Bot (Hard)
+// -------------------------------------------------------
+class AdaptiveBot implements BotStrategy {
+  @override
+  String chooseCard({
+    required List<String> hand,
+    required String? leadingSuit,
+    required List<TrickPlay> trickPile,
+    required List<int> activePlayers,
+    required Map<int, int> cardCounts,
+    required GameMemory memory,
+  }) {
+    final playable = CardEngine.getPlayableCards(hand, leadingSuit);
+    if (leadingSuit == null) {
+      // Early game: conservative. Late game: aggressive
+      if (hand.length > 5) return _lowestCard(playable);
+      return _highestCard(playable);
+    }
+    
+    final suitMatches = playable.where((c) => CardEngine.suitOf(c) == leadingSuit).toList();
+    if (suitMatches.isNotEmpty) {
+      return _lowestCard(suitMatches);
+    }
+    
+    return _highestCard(playable);
+  }
+
+  String _lowestCard(List<String> cards) => cards.reduce((a, b) => CardEngine.parseCard(a).rank.value <= CardEngine.parseCard(b).rank.value ? a : b);
+  String _highestCard(List<String> cards) => cards.reduce((a, b) => CardEngine.parseCard(a).rank.value >= CardEngine.parseCard(b).rank.value ? a : b);
+}
+
+// -------------------------------------------------------
+// 8. Master Bot (Hard)
+// -------------------------------------------------------
+class MasterBot implements BotStrategy {
+  MasterBot({int? seed}) : _random = Random(seed);
   final Random _random;
 
   @override
@@ -111,112 +246,78 @@ class HardBot implements BotStrategy {
     required List<TrickPlay> trickPile,
     required List<int> activePlayers,
     required Map<int, int> cardCounts,
+    required GameMemory memory,
   }) {
     final playable = CardEngine.getPlayableCards(hand, leadingSuit);
 
-    // --- If we're starting the trick (no leading suit) ---
     if (leadingSuit == null) {
-      return _chooseLead(playable, hand, activePlayers, cardCounts);
+      return _chooseLead(playable, hand, activePlayers, cardCounts, memory);
     }
 
-    // --- Must follow suit ---
-    final suitMatches = playable.where(
-      (c) => CardEngine.suitOf(c) == leadingSuit,
-    ).toList();
-
+    final suitMatches = playable.where((c) => CardEngine.suitOf(c) == leadingSuit).toList();
     if (suitMatches.isNotEmpty) {
-      return _chooseFollowCard(suitMatches, trickPile, leadingSuit);
+      return _chooseFollowCard(suitMatches, trickPile, leadingSuit, memory);
     }
 
-    // --- Cannot follow — can cut ---
     return _chooseCutCard(playable, hand);
   }
 
-  /// When leading, prefer non-Ace, non-King cards to avoid being penalized.
-  /// Dump the weakest card unless we're confident we can win cleanly.
-  String _chooseLead(
-    List<String> playable,
-    List<String> hand,
-    List<int> activePlayers,
-    Map<int, int> cardCounts,
-  ) {
-    // Group by suit
+  String _chooseLead(List<String> playable, List<String> hand, List<int> activePlayers, Map<int, int> cardCounts, GameMemory memory) {
     final bySuit = <String, List<String>>{};
     for (final c in playable) {
-      final s = CardEngine.suitOf(c);
-      bySuit.putIfAbsent(s, () => []).add(c);
+      bySuit.putIfAbsent(CardEngine.suitOf(c), () => []).add(c);
     }
 
-    // Prefer to lead with a suit where we have many cards (dump faster)
-    // Avoid leading Aces unless it's the only card of that suit
     String? best;
     int bestScore = -1;
 
     for (final entry in bySuit.entries) {
       final suitCards = entry.value;
-      // Score: favor larger suit groups, avoid aces
       final hasAce = suitCards.any((c) => CardEngine.parseCard(c).rank == Rank.ace);
       final score = suitCards.length * 10 - (hasAce ? 5 : 0);
       if (score > bestScore) {
         bestScore = score;
-        // Play the lowest of this suit
-        best = suitCards.reduce((a, b) {
-          final rA = CardEngine.parseCard(a).rank.value;
-          final rB = CardEngine.parseCard(b).rank.value;
-          return rA <= rB ? a : b;
-        });
+        best = suitCards.reduce((a, b) => CardEngine.parseCard(a).rank.value <= CardEngine.parseCard(b).rank.value ? a : b);
       }
     }
-
     return best ?? playable[_random.nextInt(playable.length)];
   }
 
-  /// When following suit: if we're already winning, play the minimum possible.
-  /// If we're losing, and we have a winning card, consider whether to win.
-  String _chooseFollowCard(
-    List<String> suitCards,
-    List<TrickPlay> trickPile,
-    String leadingSuit,
-  ) {
+  String _chooseFollowCard(List<String> suitCards, List<TrickPlay> trickPile, String leadingSuit, GameMemory memory) {
     final sorted = List<String>.from(suitCards)
-      ..sort((a, b) => CardEngine.parseCard(a).rank.value
-          .compareTo(CardEngine.parseCard(b).rank.value));
-
-    final currentLeader = TrickEngine.currentLeader(trickPile, leadingSuit);
-    if (currentLeader == null) {
-      // Nobody leading yet — play lowest
-      return sorted.first;
-    }
-
-    // Play the lowest card since server decides outcome
+      ..sort((a, b) => CardEngine.parseCard(a).rank.value.compareTo(CardEngine.parseCard(b).rank.value));
     return sorted.first;
   }
 
-  /// When cutting: dump the highest non-valuable card to get rid of a burden.
-  /// Avoid keeping high-rank cards of any suit that might force a penalty.
   String _chooseCutCard(List<String> playable, List<String> hand) {
-    // Sort ascending and play the median card — not too high, not wasting low
     final sorted = List<String>.from(playable)
-      ..sort((a, b) => CardEngine.parseCard(a).rank.value
-          .compareTo(CardEngine.parseCard(b).rank.value));
-
-    // Cut with the middle card as a balanced strategy
-    return sorted[sorted.length ~/ 2];
+      ..sort((a, b) => CardEngine.parseCard(a).rank.value.compareTo(CardEngine.parseCard(b).rank.value));
+    return sorted[sorted.length ~/ 2]; // Medium dump
   }
 }
 
-/// Factory to create a bot strategy by difficulty.
+/// Factory to create a bot strategy by personality.
 class BotEngine {
   BotEngine._();
 
-  static BotStrategy create(BotDifficulty difficulty, {int? seed}) {
-    switch (difficulty) {
-      case BotDifficulty.easy:
-        return EasyBot(seed: seed);
-      case BotDifficulty.medium:
-        return MediumBot();
-      case BotDifficulty.hard:
-        return HardBot(seed: seed);
+  static BotStrategy create(BotPersonality personality, {int? seed}) {
+    switch (personality) {
+      case BotPersonality.beginner:
+        return BeginnerBot(seed: seed);
+      case BotPersonality.conservative:
+        return ConservativeBot();
+      case BotPersonality.aggressive:
+        return AggressiveBot();
+      case BotPersonality.smart:
+        return SmartBot();
+      case BotPersonality.trickHunter:
+        return TrickHunterBot();
+      case BotPersonality.escapeArtist:
+        return EscapeArtistBot();
+      case BotPersonality.adaptive:
+        return AdaptiveBot();
+      case BotPersonality.master:
+        return MasterBot(seed: seed);
     }
   }
 }
