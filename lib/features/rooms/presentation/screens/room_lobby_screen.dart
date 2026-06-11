@@ -72,6 +72,14 @@ class _RoomLobbyScreenState extends ConsumerState<RoomLobbyScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => _confirmLeave(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              ref.read(lobbyProvider(widget.roomId).notifier).fetchRoom();
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),

@@ -170,10 +170,27 @@ class WebSocketClient {
       final messageData = data['message'] as Map<String, dynamic>?;
       if (messageData == null) return;
 
+      // Extract ActionCable identifier which contains routing information like room_id
+      final identifierStr = data['identifier'] as String?;
+      Map<String, dynamic> identifierData = {};
+      if (identifierStr != null) {
+        try {
+          identifierData = jsonDecode(identifierStr);
+        } catch (_) {}
+      }
+
       final eventType = messageData['type'] as String? ?? 'unknown';
       final eventData = messageData['data'] as Map<String, dynamic>? ?? {};
 
-      final event = WsEvent(type: eventType, data: eventData, raw: messageData);
+      // Merge identifier routing info (like room_id) into raw data if it's missing
+      final rawMap = Map<String, dynamic>.from(messageData);
+      identifierData.forEach((key, value) {
+        if (!rawMap.containsKey(key)) {
+          rawMap[key] = value;
+        }
+      });
+
+      final event = WsEvent(type: eventType, data: eventData, raw: rawMap);
       _eventController?.add(event);
       _logger.d('[WS] Event: $eventType');
     } catch (e) {

@@ -81,7 +81,7 @@ class LobbyNotifier extends Notifier<LobbyState> {
 
   Future<void> _initLobby() async {
     // 1. Fetch current room details via HTTP
-    await _fetchRoom();
+    await fetchRoom();
 
     // 2. Connect & subscribe to RoomChannel via WebSocket
     final wsClient = getIt<WebSocketClient>();
@@ -91,13 +91,14 @@ class LobbyNotifier extends Notifier<LobbyState> {
     // 3. Listen to stream events
     _subscription = wsClient.eventStream.listen((event) {
       // Filter events meant for this room
-      if (event.raw['room_id'] == roomId) {
+      final eventRoomId = event.raw['room_id'] ?? event.data['room_id'];
+      if (eventRoomId?.toString() == roomId.toString()) {
         _handleRoomEvent(event);
       }
     });
   }
 
-  Future<void> _fetchRoom() async {
+  Future<void> fetchRoom() async {
     try {
       final repository = ref.read(roomsRepositoryProvider);
       final roomModel = await repository.getRoom(roomId);
@@ -128,7 +129,7 @@ class LobbyNotifier extends Notifier<LobbyState> {
           state = state.copyWith(room: AsyncValue.data(roomModel));
         } catch (_) {
           // If JSON parsing fails, fall back to HTTP refresh
-          _fetchRoom();
+          fetchRoom();
         }
         break;
 
@@ -136,7 +137,7 @@ class LobbyNotifier extends Notifier<LobbyState> {
       case 'user_left':
       case 'player_ready':
         // Refresh room details to guarantee consistency
-        _fetchRoom();
+        fetchRoom();
         break;
 
       case 'chat_message':

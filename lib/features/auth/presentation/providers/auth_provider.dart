@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/websocket/websocket_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/models/user_model.dart';
 import '../../domain/auth_state.dart';
@@ -20,9 +21,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> build() async {
     // On startup — try auto-login from stored token
     final user = await _repo.tryAutoLogin();
-    return user != null
-        ? AuthState.authenticated(user: user)
-        : const AuthState.unauthenticated();
+    if (user != null) {
+      getIt<WebSocketClient>().connect();
+      return AuthState.authenticated(user: user);
+    }
+    return const AuthState.unauthenticated();
   }
 
   // -------------------------------------------------------
@@ -42,6 +45,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         deviceUid:  deviceUid,
         platform:   platform,
       );
+      getIt<WebSocketClient>().connect();
       return AuthState.authenticated(user: user);
     });
   }
@@ -67,6 +71,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         displayName: displayName,
         deviceUid:   deviceUid,
       );
+      getIt<WebSocketClient>().connect();
       return AuthState.authenticated(user: user);
     });
   }
@@ -78,6 +83,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final user = await _repo.guestLogin();
+      getIt<WebSocketClient>().connect();
       return AuthState.authenticated(user: user);
     });
   }
@@ -86,6 +92,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   // Logout
   // -------------------------------------------------------
   Future<void> logout() async {
+    getIt<WebSocketClient>().disconnect();
     await _repo.logout();
     state = const AsyncValue.data(AuthState.unauthenticated());
   }
